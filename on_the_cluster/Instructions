@@ -1,0 +1,12 @@
+Submitting the job with
+for i in {1..10}
+do
+qsub -v "index=$i" -e trash -o trash submission.sh
+done
+
+####### 
+Remember that in the same folder of the .jl script there should be a folder named data and subfolders data1 , data2, etc...
+
+There should also be a folder named trash where we put all the error and output files that the cluster automatically generates.
+
+
