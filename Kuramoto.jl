@@ -106,4 +106,4 @@ parameters = create_parameters(path,index);
 r = main(parameters)
 
 # Saving the data
-JLD2.jldsave("Data.jld2"; order_parameter = r, parameters)
+JLD2.jldsave("./data/data"*string(index)*"/Data.jld2"; order_parameter = r, parameters)
