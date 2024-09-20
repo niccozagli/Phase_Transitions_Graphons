@@ -1,6 +1,6 @@
 #### LIBRARIES AND FUNCTIONS
 using Plots
-using Graphs#, GraphRecipes
+using Graphs #, GraphRecipes
 using LinearAlgebra
 using StatsBase
 using DataFrames
@@ -11,16 +11,16 @@ using JLD2
 ########### CHANGE THIS FUNCTION TO SPECIFY THE COEFFICIENTS/HARMONICS OF THE INTERACTION ########
 
 function create_coefficients()
-    # We define here the interaction potential W(x) = ∑c_n sin(nx)
-    n = [1]
-    c_n = [1]    
+    # We define here the interaction potential W(x) = -  ∑c_n cos(nx)
+    n = [1,2] 
+    c_n = [1,4]    
     return n,c_n
 end
 
 
 ############ THESE SHOULD NOT BE EDITED ###########
 function create_parameters(path,index)
-    P = DataFrame(CSV.File("parameters.csv"));
+    P = DataFrame(CSV.File(path));
     # Parameters for the network
     N = P[!,"N"][index]
     p = P[!,"p"][index]
@@ -98,7 +98,7 @@ function get_energy(r,c_n)
     return U
 end
 
-function integrate_N_particle_system(parameters,x0,A,n,c_n)
+function integrate_N_particle_system(parameters,x0,A,n,c_n,coupling_drift)
     N,p,tmin,tmax,Δt,t,L,θ,σ,it_network,it_brownian, r, p_WS = parameters
     L_n = length(n)
     xnew = zeros(N) ; xold = copy(x0); r = zeros(L_n,L); U = zeros(L)
@@ -115,7 +115,7 @@ function integrate_N_particle_system(parameters,x0,A,n,c_n)
     return r,U
 end
 
-function main(parameters)
+function main(parameters,coupling_drift)
  
     iteration_network = parameters[10]
     iteration_brownian = parameters[11]
@@ -129,7 +129,7 @@ function main(parameters)
         A = create_network_ring(parameters);
         for itBrown in 1:iteration_brownian
             x0 = create_initial_condition(parameters);
-            R,u = integrate_N_particle_system(parameters,x0,A,n,c_n)
+            R,u = integrate_N_particle_system(parameters,x0,A,n,c_n,coupling_drift)
 
             r[index] = R
             Energy[index,:] = u
@@ -142,14 +142,15 @@ function main(parameters)
 end
 
 # Input from command line
-path = "./parameters.csv"#ARGS[1]
-index = 1#parse(Int,ARGS[2])
+path = ARGS[1]
+index = parse(Int,ARGS[2])
 # Load parameters and dynamical specification of the system (harmonics of the potential)
 parameters = create_parameters(path,index);
 n , c_n = create_coefficients()
 coupling_drift(x) = coupling_interaction(x,n,c_n)
 
 # Main Function
-r , Energy =  main(parameters)
+r , Energy =  main(parameters,coupling_drift)
 
-JLD2.jldsave("./data/data"*string(index)*"/Data.jld2"; order_parameter = r, Energy = Energy ,parameters)
+path_save = "./data/data"*string(index)*"/Data.jld2"
+JLD2.jldsave(path_save; order_parameter = r, Energy = Energy ,parameters)
