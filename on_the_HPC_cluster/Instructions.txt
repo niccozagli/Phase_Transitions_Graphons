@@ -1,0 +1,42 @@
+#### Using Julia on the new HPC #### 
+From the terminal enter
+    module load julia/1.6.4
+Now you should be able to enter 
+    julia
+and obtain the usual julia interface in the terminal
+
+Now, install all the libraries you need
+    Pkg.status()
+    Pkg.add("StatsBase")
+You can check whether this worked with 
+    using StatsBase 
+and see whether it gives an error
+
+##### Folders & Overall Structure #####
+Nothing changes, you can just copy what you had in the previous cluster here (note: I could have files/directories with different names than yours). 
+My setting is the following:
+- the main folder is called "Graphon"
+- inside the folder I have:
+    a) the julia script called Integrate_Periodic_Potential.jl 
+    b) the submission file submission.sh
+    c) a file with the parameters called parameters.csv
+    d) a directory called trash
+    e) a directory called data with subdirectories data1, data2, ..., data32
+
+There will be a slight change to implement (see next step) in the submission file submission.sh
+
+##### Change in submission file ######
+I have added the new submission.sh file in this directory.
+
+##### How to submit the job ####
+It is exactly the same!
+
+for i in {1..10}
+do
+qsub -v "index=$i" -e trash -o trash submission.sh
+done
+
+
+
+
+
