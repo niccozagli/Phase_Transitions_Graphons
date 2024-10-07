@@ -13,7 +13,9 @@ You can check whether this worked with
 and see whether it gives an error
 
 ##### Folders & Overall Structure #####
-Nothing changes, you can just copy what you had in the previous cluster here (note: I could have files/directories with different names than yours). 
+Most things are similar to what we had before, but you cannot just copy what you had in the previous cluster here. 
+You should be ok by uploading everything that is in this folder. 
+Note: My setup could differ from yours in terms of folder/file names. You can find below a description of what I have. 
 My setting is the following:
 - the main folder is called "Graphon"
 - inside the folder I have:
@@ -23,18 +25,21 @@ My setting is the following:
     d) a directory called trash
     e) a directory called data with subdirectories data1, data2, ..., data32
 
-There will be a slight change to implement (see next step) in the submission file submission.sh
+A few things to keep in mind:
+##### Change in the jl script ######
+Of course, HPC had a Julia version that was different from what we used to use, so I have had to change a few functions to make it work.
+This is why you should use the new jl script! 
 
 ##### Change in submission file ######
-I have added the new submission.sh file in this directory.
+The way we submit jobs on the HPC is somewhat different.
+I have added the new submission.sh file in this directory. You can just have a look at it! 
 
 ##### How to submit the job ####
 It is exactly the same!
-
-for i in {1..10}
-do
-qsub -v "index=$i" -e trash -o trash submission.sh
-done
+    for i in {1..10}
+    do
+    qsub -v "index=$i" -e trash -o trash submission.sh
+    done
 
 
 
