@@ -6,12 +6,11 @@ using DataFrames
 using CSV
 using JLD2
 
-
 ########### CHANGE THIS FUNCTION TO SPECIFY THE COEFFICIENTS/HARMONICS OF THE INTERACTION ########
 
 function create_coefficients()
-    # We define here the interaction potential W(x) = -  ∑c_n cos(nx)
-    n = [1,2,5] 
+    # We define here the interaction potential W(x) = ∑c_n sin(nx)
+    n = [1,2,5]
     c_n = [1,4,2]    
     return n,c_n
 end
@@ -33,7 +32,7 @@ function create_parameters(path,index)
 
     p_WS = P[!,"p_WS"][index] ; r = P[!,"r"][index]
 
-    t = tmin:Δt:tmax#range(start=tmin,stop=tmax,step=Δt);
+    t = tmin:Δt:tmax;   #range(start=tmin,stop=tmax,step=Δt);
     L = length(t);
 
     parameters = (N,p,tmin,tmax,Δt,t,L,θ,σ,it_network,it_brownian, r, p_WS) 
@@ -44,21 +43,49 @@ function create_network_ER(parameters)
     N,p,tmin,tmax,Δt,t,L,θ,σ,it_network,it_brownian, r, p_WS = parameters;
     G = Graphs.SimpleGraphs.erdos_renyi(N,Float32(p)) 
     A = Graphs.sparse(G);
-    return A
+    factor = 1
+    return A , factor
 end
 
 function create_network_small_world(parameters)
     N,p,tmin,tmax,Δt,t,L,θ,σ,it_network,it_brownian, r, p_WS = parameters;
     G = Graphs.SimpleGraphs.watts_strogatz(N,r,p_WS) 
     A = Graphs.sparse(G);
-    return A
+    factor = 1
+    return A , factor
 end
 
 function create_network_ring(parameters)
     N,p,tmin,tmax,Δt,t,L,θ,σ,it_network,it_brownian, r, p_WS = parameters;
     G = Graphs.SimpleGraphs.watts_strogatz(N,r,0) 
     A = Graphs.sparse(G);
-    return A
+    factor = 1
+    return A , factor 
+end
+
+function create_network_power_law(parameters,α,β)
+    N,p,tmin,tmax,Δt,t,L,θ,σ,it_network,it_brownian, r, p_WS = parameters
+    g = SimpleGraph(N)
+    ρn = N^(-β)
+    W(x,y) = (x*y)^(-α)
+
+    for i in 1:N
+        xi = i/N
+        for j in 1:i-1 
+            xj = j/N
+            w = min( 1/ρn , W(xi,xj) )
+            prob = ρn * w 
+
+            if( rand() < prob )
+                add_edge!(g,i,j)
+            end
+
+        end
+    end
+
+    A = Graphs.sparse(g);
+    factor = ρn
+    return A , factor
 end
 
 function create_initial_condition(parameters)
@@ -97,24 +124,25 @@ function get_energy(r,c_n)
     return U
 end
 
-function integrate_N_particle_system(parameters,x0,A,n,c_n,coupling_drift)
+
+function integrate_N_particle_system(parameters,x0,A,n,c_n,factor)
     N,p,tmin,tmax,Δt,t,L,θ,σ,it_network,it_brownian, r, p_WS = parameters
     L_n = length(n)
-    xnew = zeros(N) ; xold = copy(x0); R = zeros(L_n,L); U = zeros(L)
+    xnew = zeros(N) ; xold = copy(x0); r = zeros(L_n,L); U = zeros(L)
     for tt=1:L
         for i=1:N
             coupl = coupling_drift.(xold[i] .- xold)
-            xnew[i] = mod( xold[i] - θ/N * dot(A[:,i],coupl) + σ * randn() , 2*π)
+            xnew[i] = mod( xold[i] - θ/(N*factor) * dot(A[:,i],coupl) + σ * randn() , 2*π)
         end
         OP = order_param(xnew,n)
-        R[:,tt] = OP
+        r[:,tt] = OP
         U[tt] = get_energy(OP,c_n)
         xold = copy(xnew);
     end
-    return R,U
+    return r,U
 end
 
-function main(parameters,coupling_drift)
+function main(parameters)
  
     iteration_network = parameters[10]
     iteration_brownian = parameters[11]
@@ -125,10 +153,12 @@ function main(parameters,coupling_drift)
 
     index = 1
     for itNet in 1:iteration_network
-        A = create_network_ring(parameters);
+        α = 0.4; β = 0.48 #### CHANGE HERE THE PARAMETERS FOR THE POWER LAW NETWORK
+        A , factor = create_network_power_law(parameters,α,β)
+        #A , factor = create_network_small_world(parameters)
         for itBrown in 1:iteration_brownian
             x0 = create_initial_condition(parameters);
-            R,u = integrate_N_particle_system(parameters,x0,A,n,c_n,coupling_drift)
+            R,u = integrate_N_particle_system(parameters,x0,A,n,c_n,factor)
 
             r[index] = R
             Energy[index,:] = u
@@ -149,7 +179,7 @@ n , c_n = create_coefficients()
 coupling_drift(x) = coupling_interaction(x,n,c_n)
 
 # Main Function
-r , Energy =  main(parameters,coupling_drift)
+r , Energy =  main(parameters)
 
 path_save = "./data/data"*string(index)*"/Data.jld2"
 JLD2.jldsave(path_save; order_parameter = r, Energy = Energy ,parameters)
