@@ -33,7 +33,7 @@ function create_parameters(path,index)
 
     p_WS = P[!,"p_WS"][index] ; r = P[!,"r"][index]
 
-    t = range(start=tmin,stop=tmax,step=Δt);
+    t = tmin:Δt:tmax#range(start=tmin,stop=tmax,step=Δt);
     L = length(t);
 
     parameters = (N,p,tmin,tmax,Δt,t,L,θ,σ,it_network,it_brownian, r, p_WS) 
