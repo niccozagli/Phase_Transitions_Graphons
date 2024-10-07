@@ -41,7 +41,24 @@ It is exactly the same!
     qsub -v "index=$i" -e trash -o trash submission.sh
     done
 
+###### Info on how to run the Power Law Graph simulations ######
+I have extended the code to include power law networks. In order to use it, one has to specify:
+- \alpha: the exponent of the graphon W(x,y) = (xy)^(-\alpha)
+- \beta : the exponent of the renormalisation factor for a non-trivial mean field limit 
+The exponents need to satisy 
+       0  < \alpha < \beta < 1/2
+I have followed the algorithm and conventions of the following paper to create the network and simulate the N-particle system
+" The Kuramoto Model on Power Law Graphs: Synchronization and Contrast States", Journal of Nonlinear Science (2020) 30:2405–2427 
+https://doi.org/10.1007/s00332-018-9489-3
 
+The only two changes to the main(...) function are:
+a)  define the variables \alpha and \beta 
+b)  use the correct create_network_power_law(parameters,α,β) function
+Please note that, contrary to the previous versions, the functions that create a network have now a new signature
+    A , factor = create_network_ANYTYPE()
+where the new variable factor is the renormalisation factor for integrating the system. 
+For dense graphs (ER, small world, ...) one can set factor == 1. 
+For the power law graph, factor = N^(-\beta) and it goes to zero in the thermodynamic limit.
 
 
 
