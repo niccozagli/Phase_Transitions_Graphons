@@ -151,5 +151,5 @@ coupling_drift(x) = coupling_interaction(x,n,c_n)
 # Main Function
 r , Energy =  main(parameters,coupling_drift)
 
-path_save = "Data.jld2"#"./data/data"*string(index)*"/Data.jld2"
+path_save = "./data/data"*string(index)*"/Data.jld2"
 JLD2.jldsave(path_save; order_parameter = r, Energy = Energy ,parameters)
