@@ -10,7 +10,7 @@ using JLD2
 ########### CHANGE THIS FUNCTION TO SPECIFY THE COEFFICIENTS/HARMONICS OF THE INTERACTION ########
 
 function create_coefficients()
-    # We define here the interaction potential W(x) = ∑c_n sin(nx)
+    # We define here the interaction potential W(x) = - ∑c_n cos(nx)
     n = [1,2]
     c_n = [1,2]    
     return n,c_n
@@ -166,9 +166,9 @@ end
 function main(parameters,n,c_n)
 
     N,p,tmin,tmax,Δt,t,L,θ,σ,it_network,it_brownian, r, p_WS,tau = parameters
-    #println("tmax = "*string(tmax))
-    #println("Blas_threads="*string(BLAS.get_num_threads()))
-    #println("julia_threads="*string(Base.Threads.nthreads()))
+    println("tmax = "*string(tmax))
+    println("Blas_threads="*string(BLAS.get_num_threads()))
+    println("julia_threads="*string(Base.Threads.nthreads()))
     tot = it_brownian*it_network
     t_save = tmin:Δt*tau:tmax; 
     r = Array{Matrix{Float64}}(undef, tot)#zeros(tot,length(parameters[6]))
@@ -200,12 +200,13 @@ index = parse(Int,ARGS[2])
 parameters = create_parameters(path,index);
 n , c_n = create_coefficients()
 
-#BLAS.set_num_threads(1)
-#using BenchmarkTools
-#@btime main($parameters,$n,$c_n)
+BLAS.set_num_threads(1)
+
+using BenchmarkTools
+@btime main($parameters,$n,$c_n)
 
 # Main Function
-r , Energy =  main(parameters,n,c_n)
+#r , Energy =  main(parameters,n,c_n)
 
-path_save = "./data/data"*string(index)*"/Data.jld2"
-JLD2.jldsave(path_save; order_parameter = r, Energy = Energy ,parameters)
+#path_save = "./data/data"*string(index)*"/Data.jld2"
+#JLD2.jldsave(path_save; order_parameter = r, Energy = Energy ,parameters)
