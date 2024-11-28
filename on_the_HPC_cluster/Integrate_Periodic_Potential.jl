@@ -138,10 +138,7 @@ function integrate_N_particle_system(parameters,x0,A,n,c_n,factor)
     index = 1
     coupl = zeros(N)
     for tt=1:L
-        # for i=1:N
-        #     coupl[:] =  coupling_drift.(xold[i] .- xold)
-        #     xnew[i] = @views mod( xold[i] - θ/(N*factor) * dot( A[:,i],coupl) + σ * randn() , 2*π)
-        # end
+
         for i=1:N
             for j=1:N
                 coupl[j] = coupling_drift.(xold[i] - xold[j])
@@ -158,39 +155,41 @@ function integrate_N_particle_system(parameters,x0,A,n,c_n,factor)
             index += 1
         end
 
-        xold = copy(xnew);
+        xold .= xnew;
     end
-    return r,U
+
+    return r,U,xnew
 end
 
 function main(parameters,n,c_n)
 
     N,p,tmin,tmax,Δt,t,L,θ,σ,it_network,it_brownian, r, p_WS,tau = parameters
-    println("tmax = "*string(tmax))
-    println("Blas_threads="*string(BLAS.get_num_threads()))
-    println("julia_threads="*string(Base.Threads.nthreads()))
-    tot = it_brownian*it_network
-    t_save = tmin:Δt*tau:tmax; 
-    r = Array{Matrix{Float64}}(undef, tot)#zeros(tot,length(parameters[6]))
-    Energy = zeros(tot,length(t_save)-1)
-    
-    index = 1
+    # println("tmax = "*string(tmax))
+    # println("Blas_threads="*string(BLAS.get_num_threads()))
+    # println("julia_threads="*string(Base.Threads.nthreads()))
+    tot     = it_brownian*it_network
+    t_save  = tmin:Δt*tau:tmax; 
+    r       = Array{Matrix{Float64}}(undef, tot)#zeros(tot,length(parameters[6]))
+    Energy  = zeros(tot,length(t_save)-1)
+    X_state = zeros(tot,N)
+    index   = 1
     for itNet in 1:it_network
         α = 0.4; β = 0.48 #### CHANGE HERE THE PARAMETERS FOR THE POWER LAW NETWORK
-        A , factor = create_network_power_law(parameters,α,β)
-        #A , factor = create_network_small_world(parameters)
+        #A , factor = create_network_power_law(parameters,α,β)
+        A , factor = create_network_ER(parameters)
         for itBrown in 1:it_brownian
             x0 = create_initial_condition(parameters);
-            R,u = integrate_N_particle_system(parameters,x0,A,n,c_n,factor)
+            R,u,X = integrate_N_particle_system(parameters,x0,A,n,c_n,factor)
 
-            r[index] = R
-            Energy[index,:] = u
-
+            r[index]         = R
+            Energy[index,:]  = u
+            X_state[index,:] = X
+            
             index += 1
         end
     end
 
-    return r, Energy
+    return r, Energy, X_state
 end
 
 # Input from command line
@@ -202,11 +201,11 @@ n , c_n = create_coefficients()
 
 BLAS.set_num_threads(1)
 
-using BenchmarkTools
-@btime main($parameters,$n,$c_n)
+#using BenchmarkTools
+#@btime main($parameters,$n,$c_n)
 
 # Main Function
-#r , Energy =  main(parameters,n,c_n)
+r , Energy, X_state =  main(parameters,n,c_n)
 
-#path_save = "./data/data"*string(index)*"/Data.jld2"
-#JLD2.jldsave(path_save; order_parameter = r, Energy = Energy ,parameters)
+path_save = "./data/data"*string(index)*"/Data.jld2"
+JLD2.jldsave(path_save; order_parameter = r, Energy = Energy ,parameters,X_state)
